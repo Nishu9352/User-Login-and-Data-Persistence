@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login and Watchlist</title>
+<style>
+    body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+input, button {
+  display: block;
+  margin-bottom: 10px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+</style>
+</head>
+<body>
+<h1>Login or Signup</h1>
+<input id="email" placeholder="Email" type="email">
+<input id="password" placeholder="Pass" type="password">
+<button id="signupBtn">Signup</button>
+<button id="loginBtn">Login</button>
+
+<h2>Add to Watchlist</h2>
+<input id="item" placeholder="Watchlist Item">
+<button id="addBtn">Add</button>
+
+<h2>Your Watchlist</h2>
+<ul id="watchlist"></ul>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
+
+
+<script>
+    
+const firebaseConfig = {
+  apiKey: "<your_api_key>",
+  authDomain: "<your_auth_domain>",
+  projectId: "<your_project_id>",
+};
+
+
+const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+
+
+document.getElementById('signupBtn').addEventListener('click', () => {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      console.log('Signup successful!', userCredential);
+    })
+    .catch(err => console.error(err));  
+});
+
+
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(userCredential => {
+      console.log('Login successful!', userCredential);
+    })
+    .catch(err => console.error(err));  
+});
+
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const item = document.getElementById('item').value;
+  const user = auth.currentUser;
+
+  if (user && item) {
+    db.collection('users').doc(user.uid).collection('watchlist').add({ item })
+      .then(() => {
+        console.log('Added!', item);
+        document.getElementById('item').value = '';
+      })
+      .catch(err => console.error(err));  
+  }
+});
+
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    db.collection('users').doc(user.uid).collection('watchlist')
+      .onSnapshot(snapshot => {
+        const ul = document.getElementById('watchlist');
+        ul.innerHTML = '';
+        snapshot.docs.forEach(doc => {
+          const li = document.createElement('li');
+          li.textContent = doc.data().item;
+          ul.prepend(li);
+        });
+      });
+  }
+});
+
+</script>
+</body>
+</html>
